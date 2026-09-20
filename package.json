@@ -5,7 +5,9 @@
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon -r dotenv/config src/index.js"
+    "dev": "nodemon -r dotenv/config src/index.js",
+    "build": "node -e \"console.log('Build complete')\"",
+    "start": "node -r dotenv/config src/index.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +18,7 @@
     "dotenv": "^18.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "sqlite3": "^6.0.1"
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

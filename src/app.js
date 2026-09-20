@@ -1,9 +1,16 @@
 import express from "express"
 import session from "express-session"
+import path from "path"
+import { fileURLToPath } from "url"
 import authRoute from "./routes/auth.route.js"
 import cartRoute from "./routes/cart.route.js"
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
+
+// ========== STATIC ASSETS ==========
+app.use(express.static(path.resolve(__dirname, "../public")))
+// ========== STATIC ASSETS ==========
 
 // ========== BODY PARSERS ==========
 app.use(express.json())

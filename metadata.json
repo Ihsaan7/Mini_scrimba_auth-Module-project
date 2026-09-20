@@ -1,0 +1,8 @@
+{
+  "name": "Auth & Cart",
+  "description": "A minimalist, animated authentication and shopping cart interface connected to an Express SQLite backend with session management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

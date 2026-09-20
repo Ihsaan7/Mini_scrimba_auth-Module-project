@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth & Cart</title>
+  <meta name="description" content="A minimalist, animated authentication and shopping cart interface connected to an Express SQLite backend with session management.">
+  <meta property="og:title" content="Auth & Cart">
+  <meta property="og:description" content="A minimalist, animated authentication and shopping cart interface connected to an Express SQLite backend with session management.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Header Bar -->
+  <header id="main-header" class="header-bar">
+    <div class="header-container">
+      <div id="brand-container" class="brand-group">
+        <div id="brand-logo-icon" class="brand-badge">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+            <path d="M3 6h18"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span id="brand-name" class="brand-title">MINI CART</span>
+          <span id="backend-indicator" class="backend-tag">
+            <span class="status-dot online"></span>
+            SQLite Backend Active
+          </span>
+        </div>
+      </div>
+
+      <div id="header-user-actions" class="header-actions">
+        <!-- Injected dynamically via JS: User pill or Auth status -->
+        <div id="session-status-badge" class="session-badge">
+          <span id="session-status-text">Checking session...</span>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary btn-sm hidden" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Sign out
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main id="app-main" class="main-wrapper">
+
+    <!-- VIEW 1: AUTHENTICATION (When logged out) -->
+    <section id="auth-view" class="view-section">
+      <div class="auth-card-container">
+        <div id="auth-card" class="card auth-card">
+          <!-- Auth Header -->
+          <div class="auth-card-header">
+            <h1 id="auth-main-title" class="auth-title">Welcome</h1>
+            <p id="auth-subtitle" class="auth-subtitle">Sign in to access your session-backed cart</p>
+          </div>
+
+          <!-- Segmented Tab Switcher -->
+          <div id="auth-tabs" class="tabs-segmented">
+            <button id="tab-login" class="tab-btn active" type="button">Sign In</button>
+            <button id="tab-register" class="tab-btn" type="button">Create Account</button>
+          </div>
+
+          <!-- Alert / Notice message area -->
+          <div id="auth-alert" class="alert-box hidden" role="alert"></div>
+
+          <!-- LOGIN FORM -->
+          <form id="login-form" class="auth-form" novalidate>
+            <div class="form-group">
+              <label for="login-email" class="form-label">Email address</label>
+              <div class="input-wrapper">
+                <input 
+                  type="email" 
+                  id="login-email" 
+                  name="email" 
+                  class="form-input" 
+                  placeholder="name@example.com" 
+                  required 
+                  autocomplete="email"
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="login-password" class="form-label">Password</label>
+              <div class="input-wrapper">
+                <input 
+                  type="password" 
+                  id="login-password" 
+                  name="password" 
+                  class="form-input" 
+                  placeholder="••••••••" 
+                  required 
+                  autocomplete="current-password"
+                >
+              </div>
+            </div>
+
+            <button id="login-submit-btn" type="submit" class="btn btn-primary btn-full">
+              <span class="btn-text">Sign In</span>
+              <span class="btn-spinner hidden"></span>
+            </button>
+          </form>
+
+          <!-- REGISTER FORM -->
+          <form id="register-form" class="auth-form hidden" novalidate>
+            <div class="form-group">
+              <label for="reg-username" class="form-label">Username</label>
+              <div class="input-wrapper">
+                <input 
+                  type="text" 
+                  id="reg-username" 
+                  name="username" 
+                  class="form-input" 
+                  placeholder="e.g. alex" 
+                  required 
+                  autocomplete="username"
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-email" class="form-label">Email address</label>
+              <div class="input-wrapper">
+                <input 
+                  type="email" 
+                  id="reg-email" 
+                  name="email" 
+                  class="form-input" 
+                  placeholder="alex@example.com" 
+                  required 
+                  autocomplete="email"
+                >
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-password" class="form-label">
+                <span>Password</span>
+                <span class="form-hint">At least 6 characters</span>
+              </label>
+              <div class="input-wrapper">
+                <input 
+                  type="password" 
+                  id="reg-password" 
+                  name="password" 
+                  class="form-input" 
+                  placeholder="••••••••" 
+                  minlength="6" 
+                  required 
+                  autocomplete="new-password"
+                >
+              </div>
+            </div>
+
+            <button id="register-submit-btn" type="submit" class="btn btn-primary btn-full">
+              <span class="btn-text">Create Account</span>
+              <span class="btn-spinner hidden"></span>
+            </button>
+          </form>
+
+          <!-- Quick Demo Helper -->
+          <div id="demo-quick-fill-box" class="demo-box">
+            <div class="demo-box-header">
+              <span class="demo-label">Testing Sandbox</span>
+              <button id="quick-fill-btn" type="button" class="text-button">
+                Autofill test user
+              </button>
+            </div>
+            <p class="demo-tip">Quickly try the app with pre-filled test credentials or create a new account.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: DASHBOARD & CART (When logged in) -->
+    <section id="dashboard-view" class="view-section hidden">
+      <!-- User Welcome Banner -->
+      <div id="user-greeting-banner" class="greeting-banner">
+        <div class="greeting-content">
+          <div class="user-avatar-mini" id="user-avatar-text">U</div>
+          <div>
+            <h2 class="greeting-title">
+              Hello, <span id="current-username">User</span>
+            </h2>
+            <p class="greeting-email" id="current-user-email">user@example.com</p>
+          </div>
+        </div>
+        <div class="session-info-pill">
+          <span class="pulse-indicator"></span>
+          <span>HTTP Cookie Session Active</span>
+        </div>
+      </div>
+
+      <!-- Two-Column Workspace -->
+      <div id="workspace-grid" class="workspace-grid">
+
+        <!-- Column 1: Store Catalog & Custom Add -->
+        <div id="catalog-column" class="workspace-column">
+          <div id="catalog-card" class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <h3 id="catalog-title" class="card-heading">Product Catalog</h3>
+                <p class="card-description">Select items to insert into your SQLite cart table.</p>
+              </div>
+            </div>
+
+            <!-- Catalog Items List -->
+            <div id="catalog-items-list" class="catalog-list">
+              <!-- Rendered via JavaScript -->
+            </div>
+
+            <!-- Custom Item Add Collapsible -->
+            <div id="custom-add-section" class="custom-add-wrapper">
+              <button id="toggle-custom-add-btn" type="button" class="toggle-custom-btn">
+                <span class="toggle-icon">+</span>
+                <span>Add custom product</span>
+              </button>
+
+              <form id="custom-item-form" class="custom-item-form hidden">
+                <div class="form-group">
+                  <label for="custom-name" class="form-label">Product Name</label>
+                  <input type="text" id="custom-name" class="form-input" placeholder="e.g. Ergonomic Mouse" required>
+                </div>
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label for="custom-price" class="form-label">Price ($)</label>
+                    <input type="number" id="custom-price" class="form-input" placeholder="29.99" step="0.01" min="0.01" required>
+                  </div>
+                  <div class="form-group flex-1">
+                    <label for="custom-qty" class="form-label">Quantity</label>
+                    <input type="number" id="custom-qty" class="form-input" value="1" min="1" required>
+                  </div>
+                </div>
+                <button id="custom-add-submit-btn" type="submit" class="btn btn-secondary btn-full">
+                  Add Custom Item
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2: Live Shopping Cart -->
+        <div id="cart-column" class="workspace-column">
+          <div id="cart-card" class="card">
+            <div class="card-header border-b">
+              <div class="cart-header-left">
+                <h3 id="cart-title" class="card-heading">Shopping Cart</h3>
+                <span id="cart-count-badge" class="count-badge">0 items</span>
+              </div>
+              <button id="refresh-cart-btn" class="icon-button" title="Refresh cart data" type="button">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Cart Items Container -->
+            <div id="cart-items-wrapper" class="cart-items-wrapper">
+              <!-- If empty -->
+              <div id="cart-empty-state" class="empty-state">
+                <div class="empty-icon-circle">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="8" cy="21" r="1"/>
+                    <circle cx="19" cy="21" r="1"/>
+                    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+                  </svg>
+                </div>
+                <h4 class="empty-title">Your cart is empty</h4>
+                <p class="empty-subtitle">Items you add will synchronize with the server database.</p>
+              </div>
+
+              <!-- Item List Table -->
+              <div id="cart-table" class="cart-table hidden">
+                <div class="cart-table-head">
+                  <span class="col-item">Item</span>
+                  <span class="col-qty">Qty</span>
+                  <span class="col-price">Unit</span>
+                  <span class="col-total">Subtotal</span>
+                </div>
+                <div id="cart-items-rows" class="cart-table-body">
+                  <!-- Injected via JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Cart Summary Footer -->
+            <div id="cart-summary-footer" class="cart-footer">
+              <div class="summary-row">
+                <span class="summary-label">Total Items</span>
+                <span id="summary-items-count" class="summary-value font-mono">0</span>
+              </div>
+              <div class="summary-row total-row">
+                <span class="total-label">Estimated Total</span>
+                <span id="summary-total-price" class="total-amount font-mono">$0.00</span>
+              </div>
+              <div class="cart-actions-row">
+                <button id="checkout-sim-btn" class="btn btn-primary btn-full" type="button">
+                  Complete Order
+                </button>
+              </div>
+              <p class="summary-footnote">Stored in SQLite carts table for session <span id="footnote-user-id">#1</span></p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- App Script -->
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
