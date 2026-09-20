@@ -112,6 +112,17 @@ function formatCurrency(amount) {
   }).format(amount);
 }
 
+// Helper to build headers with session token fallback for iframe environments
+function getAuthHeaders(customHeaders = {}) {
+  const headers = { ...customHeaders };
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['x-session-token'] = token;
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 // ==========================================================================
 // AUTHENTICATION LOGIC
 // ==========================================================================
@@ -119,7 +130,7 @@ async function checkAuthSession() {
   try {
     const res = await fetch('/api/v1/users/profile', {
       method: 'GET',
-      headers: { 'Accept': 'application/json' },
+      headers: getAuthHeaders({ 'Accept': 'application/json' }),
       credentials: 'include'
     });
 
@@ -130,6 +141,18 @@ async function checkAuthSession() {
         return;
       }
     }
+    
+    // Fallback: check if we have cached user info with token
+    const cachedUser = localStorage.getItem('auth_user');
+    const cachedToken = localStorage.getItem('auth_token');
+    if (cachedUser && cachedToken) {
+      try {
+        const parsed = JSON.parse(cachedUser);
+        onUserAuthenticated(parsed, cachedToken);
+        return;
+      } catch (e) {}
+    }
+
     onUserLoggedOut();
   } catch (err) {
     console.warn('Session check failed:', err);
@@ -137,8 +160,12 @@ async function checkAuthSession() {
   }
 }
 
-function onUserAuthenticated(user) {
+function onUserAuthenticated(user, token = null) {
   currentUser = user;
+  if (token) {
+    localStorage.setItem('auth_token', token);
+  }
+  localStorage.setItem('auth_user', JSON.stringify(user));
   
   // Update header
   elements.sessionStatusText.textContent = `@${user.username}`;
@@ -163,6 +190,8 @@ function onUserAuthenticated(user) {
 function onUserLoggedOut() {
   currentUser = null;
   currentCart = { cartCount: 0, cartTotal: 0, items: [] };
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('auth_user');
 
   // Header
   elements.sessionStatusText.textContent = 'Not logged in';
@@ -234,10 +263,10 @@ async function handleLogin(e) {
   try {
     const res = await fetch('/api/v1/users/login', {
       method: 'POST',
-      headers: {
+      headers: getAuthHeaders({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      },
+      }),
       credentials: 'include',
       body: JSON.stringify({ email, password })
     });
@@ -254,7 +283,7 @@ async function handleLogin(e) {
       id: data.data.userId,
       username: data.data.username,
       email: data.data.email
-    });
+    }, data.data.token);
   } catch (err) {
     showAlert('Network error communicating with server.');
   } finally {
@@ -286,10 +315,10 @@ async function handleRegister(e) {
   try {
     const res = await fetch('/api/v1/users/register', {
       method: 'POST',
-      headers: {
+      headers: getAuthHeaders({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      },
+      }),
       credentials: 'include',
       body: JSON.stringify({ username, email, password })
     });
@@ -306,10 +335,10 @@ async function handleRegister(e) {
     // Auto-login newly registered user
     const loginRes = await fetch('/api/v1/users/login', {
       method: 'POST',
-      headers: {
+      headers: getAuthHeaders({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      },
+      }),
       credentials: 'include',
       body: JSON.stringify({ email, password })
     });
@@ -320,7 +349,7 @@ async function handleRegister(e) {
         id: loginData.data.userId,
         username: loginData.data.username,
         email: loginData.data.email
-      });
+      }, loginData.data.token);
     } else {
       setActiveTab('login');
       elements.loginEmail.value = email;
@@ -336,14 +365,12 @@ async function handleRegister(e) {
 // Handle Logout
 async function handleLogout() {
   try {
-    const res = await fetch('/api/v1/users/logout', {
+    await fetch('/api/v1/users/logout', {
       method: 'POST',
-      headers: { 'Accept': 'application/json' },
+      headers: getAuthHeaders({ 'Accept': 'application/json' }),
       credentials: 'include'
     });
-    if (res.ok) {
-      showToast('Logged out successfully.', 'success');
-    }
+    showToast('Logged out successfully.', 'success');
   } catch (err) {
     console.error('Logout error:', err);
   } finally {
@@ -414,10 +441,10 @@ async function addItemToCart(product_name, price, quantity, triggerBtn) {
   try {
     const res = await fetch('/api/v1/carts/add', {
       method: 'POST',
-      headers: {
+      headers: getAuthHeaders({
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      },
+      }),
       credentials: 'include',
       body: JSON.stringify({ product_name, price, quantity })
     });
@@ -452,13 +479,21 @@ async function fetchCart() {
   try {
     const res = await fetch('/api/v1/carts', {
       method: 'GET',
-      headers: { 'Accept': 'application/json' },
+      headers: getAuthHeaders({ 'Accept': 'application/json' }),
       credentials: 'include'
     });
 
     if (!res.ok) {
       if (res.status === 401) {
-        onUserLoggedOut();
+        console.warn('Session unauthorized when fetching cart.');
+        // Verify with /profile before kicking out user
+        const check = await fetch('/api/v1/users/profile', {
+          headers: getAuthHeaders({ 'Accept': 'application/json' }),
+          credentials: 'include'
+        });
+        if (!check.ok) {
+          onUserLoggedOut();
+        }
       }
       return;
     }

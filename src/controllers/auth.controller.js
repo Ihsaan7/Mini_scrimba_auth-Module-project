@@ -66,13 +66,19 @@ export const loginUser = (req , res)=>
                             req.session.userId = user.id;
                             req.session.username = user.username;
 
-                            return res.status(200).json(
-                                {
-                                    success:true,
-                                    message:"Login successful",
-                                    data:{ userId:user.id , username: user.username , email:user.email}
+                            const token = Buffer.from(JSON.stringify({ userId: user.id, username: user.username })).toString("base64");
 
-                                })
+                            req.session.save((saveErr) => {
+                                if (saveErr) {
+                                    return res.status(500).json({ success: false, message: saveErr.message });
+                                }
+                                return res.status(200).json(
+                                    {
+                                        success: true,
+                                        message: "Login successful",
+                                        data: { userId: user.id, username: user.username, email: user.email, token }
+                                    });
+                            });
                         }).catch((bcryptErr)=>
                             {
                                 return res.status(500).json({ success: false, message: bcryptErr.message });
