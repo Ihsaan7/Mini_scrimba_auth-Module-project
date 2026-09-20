@@ -1,0 +1,102 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                    CART SYSTEM FLOW                              │
+└─────────────────────────────────────────────────────────────────┘
+
+ USER: Clicks "Add to Cart"
+        │
+        ▼
+ POST /api/v1/cart/add
+ { product_name: "Keyboard", quantity: 2, price: 89.99 }
+        │
+        ▼
+ isAuthenticated Middleware
+   ├── No session?     → 401 STOP
+   └── Session exists? → next() ✅
+        │
+        ▼
+ Cart Controller (addToCart)
+   ├── product_name empty?  → 400 "Required"
+   ├── price empty?         → 400 "Required"
+   └── All good?            → db.run(INSERT INTO cart_items)
+        │
+        ▼
+ SQLite: INSERT INTO cart_items
+ (user_id: 1, product_name: "Keyboard", quantity: 2, price: 89.99)
+        │
+        ▼
+ 201 Created
+ { success: true, message: "Item added to cart", data: { ... } }
+
+
+ ─────────────────────────────────────────────────────────
+
+
+ USER: Clicks "View Cart"
+        │
+        ▼
+ GET /api/v1/cart
+        │
+        ▼
+ isAuthenticated Middleware ✅
+        │
+        ▼
+ Cart Controller (getCart)
+   ├── db.all(SELECT * FROM cart_items WHERE user_id = req.session.userId)
+   ├── Calculate cartCount = sum of all quantities
+   ├── Calculate cartTotal = sum of (quantity × price)
+   └── Return 200 with { cartCount, cartTotal, items }
+        │
+        ▼
+ 200 OK
+ {
+   success: true,
+   data: {
+     cartCount: 2,
+     cartTotal: 179.98,
+     items: [...]
+   }
+ }
+
+
+ =============================================================================
+ 
+
+ import { Router } from "express";
+import { addToCart, getCart } from "../controllers/cart.controller.js";
+import { isAuthenticated } from "../middlewares/auth.middleware.js";
+
+const router = Router();
+
+// Protect ALL cart routes
+router.use(isAuthenticated);
+
+router.post("/add", addToCart);
+router.get("/", getCart);
+
+export default router;
+
+
+=========================================================
+1. POST /api/v1/auth/register
+   Body: { "username": "alex", "email": "alex@example.com", "password": "password123" }
+   → 201 Created
+
+2. POST /api/v1/auth/login
+   Body: { "email": "alex@example.com", "password": "password123" }
+   → 200 OK (check that "connect.sid" cookie is set)
+
+3. GET /api/v1/cart
+   → 200 OK { cartCount: 0, cartTotal: 0, items: [] }
+
+4. POST /api/v1/cart/add
+   Body: { "product_name": "Mechanical Keyboard", "quantity": 2, "price": 89.99 }
+   → 201 Created
+
+5. GET /api/v1/cart
+   → 200 OK { cartCount: 2, cartTotal: 179.98, items: [...] }
+
+6. POST /api/v1/auth/logout
+   → 200 OK "Logged out successfully"
+
+7. GET /api/v1/cart
+   → 401 Unauthorized "Please log in first"
