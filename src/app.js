@@ -4,6 +4,7 @@ import path from "path"
 import { fileURLToPath } from "url"
 import authRoute from "./routes/auth.route.js"
 import cartRoute from "./routes/cart.route.js"
+import { connectDB } from "./db/index.js"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -54,6 +55,18 @@ app.use((req, res, next) => {
 })
 // ========== SESSION CONFIG ========== 
 
+
+// Database readiness middleware for serverless and container restarts
+app.use(async (req, res, next) => {
+    if (req.path.startsWith("/api/")) {
+        try {
+            await connectDB();
+        } catch (err) {
+            return res.status(500).json({ success: false, message: "Database connection failed" });
+        }
+    }
+    next();
+});
 
 // ========== ROUTES ==========
 app.use("/api/v1/users", authRoute)

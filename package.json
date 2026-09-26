@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "node --check api/index.js src/index.js src/app.js src/db/index.js src/db/schema.js src/controllers/auth.controller.js src/controllers/cart.controller.js src/routes/auth.route.js src/routes/cart.route.js",
     "dev": "nodemon -r dotenv/config src/index.js",
     "build": "node -e \"console.log('Build complete')\"",
     "start": "node -r dotenv/config src/index.js"
